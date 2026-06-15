@@ -1,15 +1,13 @@
-import { RARITIES } from '../data/mockSkins';
+import { useEffect, useState } from 'react';
 
-const CATEGORIES = [
-    'Rifle',
-    'Pistol',
-    'Sniper',
-    'SMG',
-    'Shotgun',
-    'Machine Gun',
-    'Knife',
-    'Gloves',
-    'Other',
+const RARITY_ORDER = [
+    'rarity_common',
+    'rarity_uncommon',
+    'rarity_rare',
+    'rarity_mythical',
+    'rarity_legendary',
+    'rarity_ancient',
+    'rarity_contraband',
 ];
 
 export default function Filters({
@@ -24,6 +22,35 @@ export default function Filters({
     resetFilters,
     totalCount,
 }) {
+    const [rarities, setRarities] = useState([]);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        fetch('https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json')
+            .then((res) => res.json())
+            .then((skins) => {
+                const rarityMap = new Map();
+                const categorySet = new Set();
+
+                skins.forEach((skin) => {
+                    if (skin.rarity) {
+                        rarityMap.set(skin.rarity.id, skin.rarity);
+                    }
+                    if (skin.category?.name) {
+                        categorySet.add(skin.category.name);
+                    }
+                });
+
+                const sortedRarities = [...rarityMap.values()].sort(
+                    (a, b) => RARITY_ORDER.indexOf(a.id) - RARITY_ORDER.indexOf(b.id),
+                );
+
+                setRarities(sortedRarities);
+                setCategories([...categorySet].sort());
+            })
+            .catch((err) => console.error('Erro ao carregar filtros da API:', err));
+    }, []);
+
     const hasFilters = search || rarity || category || sortBy !== 'name';
 
     return (
@@ -63,9 +90,9 @@ export default function Filters({
                     onChange={(e) => setRarity(e.target.value)}
                     className="bg-[#111118] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#f0a500]/50 flex-1 min-w-[130px]">
                     <option value="">Todas as raridades</option>
-                    {RARITIES.map((r) => (
-                        <option key={r.value} value={r.value}>
-                            {r.label}
+                    {rarities.map((r) => (
+                        <option key={r.id} value={r.id}>
+                            {r.name}
                         </option>
                     ))}
                 </select>
@@ -75,7 +102,7 @@ export default function Filters({
                     onChange={(e) => setCategory(e.target.value)}
                     className="bg-[#111118] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#f0a500]/50 flex-1 min-w-[120px]">
                     <option value="">Todas as categorias</option>
-                    {CATEGORIES.map((c) => (
+                    {categories.map((c) => (
                         <option key={c} value={c}>
                             {c}
                         </option>
@@ -87,9 +114,9 @@ export default function Filters({
                     onChange={(e) => setSortBy(e.target.value)}
                     className="bg-[#111118] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-[#f0a500]/50 flex-1 min-w-[130px]">
                     <option value="name">Nome (A-Z)</option>
-                    <option value="price_asc">Menor preço</option>
-                    <option value="price_desc">Maior preço</option>
-                    <option value="rating">Melhor avaliação</option>
+                    <option value="name_desc">Nome (Z-A)</option>
+                    <option value="rarity_asc">Raridade ↑</option>
+                    <option value="rarity_desc">Raridade ↓</option>
                 </select>
             </div>
 
